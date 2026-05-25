@@ -1,5 +1,5 @@
 /* =====================================================
-   script.js — hi shreya 😭 (v2.1 Mobile Audio + Screen Fixed)
+   script.js — hi shreya 😭 (Final Mobile Audio Gateway)
    ===================================================== */
 
 'use strict';
@@ -213,23 +213,36 @@ async function typeLines(lines, container) {
 }
 
 /* ─────────────────────────────────────────
-   MUSIC
+   MUSIC ENGINE (Direct Unlocker)
 ───────────────────────────────────────── */
 const music = $('bgMusic');
 
-async function startMusic() {
+async function triggerDirectPlayback() {
   if (state.musicStarted) return;
-  state.musicStarted = true;
-  music.volume = 0;
+  
   try {
+    // WebKit mobile audio context explicit unlock
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) {
+      const audioCtx = new AudioContextClass();
+      if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+      }
+    }
+    
+    music.volume = 0;
     await music.play();
+    state.musicStarted = true;
+    
     let v = 0;
     const fade = setInterval(() => {
       v = Math.min(v + 0.02, 0.55);
       music.volume = v;
       if (v >= 0.55) clearInterval(fade);
     }, 80);
-  } catch (_) { /* blocked handler fallback */ }
+  } catch (err) {
+    console.log('Mobile audio blocked:', err);
+  }
 }
 
 /* ─────────────────────────────────────────
@@ -238,7 +251,6 @@ async function startMusic() {
 let escapeFixed  = false;
 let escapeActive = false;
 
-// "too slow" toast element
 const fleeToast = document.createElement('div');
 fleeToast.className = 'flee-toast';
 fleeToast.textContent = 'too slow 😭';
@@ -267,9 +279,8 @@ function fixEscapeButton() {
   escapeFixed = true;
 }
 
-// NEW LOGIC: Jump nearby, never leave screen
 function getFleePos(currentX, currentY, btnW, btnH) {
-  const margin = 20; // safe padding from edges
+  const margin = 20; 
   const vw = window.innerWidth;
   const vh = window.innerHeight;
 
@@ -277,21 +288,17 @@ function getFleePos(currentX, currentY, btnW, btnH) {
   let attempts = 0;
 
   do {
-    // Pick a random direction
     const angle = Math.random() * Math.PI * 2;
-    // Jump a short distance (between 100 and 220 pixels)
     const dist = rand(100, 220); 
 
     newX = currentX + Math.cos(angle) * dist;
     newY = currentY + Math.sin(angle) * dist;
 
-    // STRICTLY clamp inside the visible screen bounds
     newX = Math.max(margin, Math.min(newX, vw - btnW - margin));
     newY = Math.max(margin, Math.min(newY, vh - btnH - margin));
 
     attempts++;
   } while (
-    // Keep trying if it hits a wall and didn't move far enough away
     Math.hypot(newX - currentX, newY - currentY) < 60 && attempts < 10
   );
 
@@ -306,8 +313,6 @@ function fleeButton(mouseX, mouseY, fromToast) {
 
   const bw  = btn.offsetWidth;
   const bh  = btn.offsetHeight;
-
-  // Find exact current position
   const currentX = parseFloat(btn.style.left);
   const currentY = parseFloat(btn.style.top);
 
@@ -321,7 +326,6 @@ function fleeButton(mouseX, mouseY, fromToast) {
   }
 }
 
-// Desktop: flee on proximity
 document.addEventListener('mousemove', e => {
   if (!escapeActive) return;
   const btn = $('btnEscape');
@@ -335,14 +339,12 @@ document.addEventListener('mousemove', e => {
   if (dist < 110) fleeButton(e.clientX, e.clientY, true);
 });
 
-// Mobile: flee on touchstart
 document.getElementById('btnEscape').addEventListener('touchstart', e => {
   e.preventDefault();
   const touch = e.touches[0];
   fleeButton(touch.clientX, touch.clientY, true);
 }, { passive: false });
 
-// Catch any stray click
 document.getElementById('btnEscape').addEventListener('click', e => {
   e.preventDefault();
   fleeButton(
@@ -418,7 +420,6 @@ screenInit['screenStep1'] = async () => {
 screenInit['screenStep2'] = async () => {
   currentPalette = PALETTES.pink;
   particleBoost  = false;
-  startMusic();
 
   injectRomanticBg($('screenStep2'));
 
@@ -441,7 +442,6 @@ screenInit['screenStep2'] = async () => {
 screenInit['screenFinal'] = async () => {
   currentPalette = PALETTES.warm;
   particleBoost  = false;
-  startMusic();
 
   injectRomanticBg($('screenFinal'));
 
@@ -467,7 +467,6 @@ screenInit['screenYes'] = async () => {
   currentPalette = PALETTES.pink;
   particleBoost  = true;
   particles.forEach(p => p.reset(false));
-  startMusic();
 
   injectRomanticBg($('screenYes'));
 
@@ -529,60 +528,31 @@ document.querySelector('.hub-cards').addEventListener('click', e => {
     goTo('screenFinal');
     return;
   }
+  
   if (card.classList.contains('hub-card--complete')) return;
   if (target) goTo(target);
 });
 
 /* ─────────────────────────────────────────
-   BUTTON WIRING
+   BUTTON WIRING (Gateway Audio Unlock)
 ───────────────────────────────────────── */
 $('btnContinue').addEventListener('click', async () => {
-
-  // mobile-safe audio unlock
-  if (!state.musicStarted) {
-    state.musicStarted = true;
-
-    try {
-      music.volume = 0;
-      await music.play();
-
-      let v = 0;
-
-      const fade = setInterval(() => {
-        v = Math.min(v + 0.02, 0.55);
-        music.volume = v;
-
-        if (v >= 0.55) {
-          clearInterval(fade);
-        }
-      }, 80);
-
-    } catch (err) {
-      console.log('audio blocked:', err);
-    }
-  }
-
+  // THE FIX: Wait for the hardware to unlock via this direct tap
+  await triggerDirectPlayback();
   goTo('screenHub');
 });
 
 $('btnSuspicious').addEventListener('click', async e => {
+  // Just in case she taps this first!
+  triggerDirectPlayback();
 
   const btn = e.currentTarget;
-
   btn.disabled = true;
   btn.style.transform = 'scale(0.95)';
-
   await sleep(120);
-
   btn.style.transform = '';
-
-  state.suspiciousIdx =
-    (state.suspiciousIdx + 1) %
-    suspiciousTexts.length;
-
-  btn.textContent =
-    suspiciousTexts[state.suspiciousIdx];
-
+  state.suspiciousIdx = (state.suspiciousIdx + 1) % suspiciousTexts.length;
+  btn.textContent = suspiciousTexts[state.suspiciousIdx];
   btn.disabled = false;
 });
 
@@ -597,11 +567,8 @@ $('btnStep2Done').addEventListener('click', () => {
 });
 
 $('btnYes').addEventListener('click', () => {
-  if (typeof music.play === 'function') { music.play().catch(() => {}); }
   goTo('screenYes');
 });
-
-/* btnEscape events are handled separately above (flee logic) */
 
 /* ─────────────────────────────────────────
    INIT
@@ -617,7 +584,6 @@ window.addEventListener('resize', () => {
   resizeCanvas();
   particles.forEach(p => { if (p.x > canvas.width) p.x = rand(0, canvas.width); });
 
-  // Update position safely if it's currently escaping
   if (escapeActive && escapeFixed) {
     const btn = $('btnEscape');
     if (btn) {
@@ -629,7 +595,6 @@ window.addEventListener('resize', () => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       
-      // Ensure it snaps back inside if resizing made it fall off screen
       const safeX = Math.max(20, Math.min(currentX, vw - bw - 20));
       const safeY = Math.max(20, Math.min(currentY, vh - bh - 20));
       
@@ -638,7 +603,6 @@ window.addEventListener('resize', () => {
     }
   }
 });
-
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
