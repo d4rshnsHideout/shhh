@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>hi shreya 😭</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <canvas id="bgCanvas"></canvas>
+
+  <!-- SCREEN 1: INTRO -->
+  <section class="screen screen--intro active" id="screenIntro">
+    <div class="screen__inner">
+      <div class="typing-block" id="introTyping"></div>
+      <div class="intro-buttons hidden" id="introButtons">
+        <button class="btn btn--pill btn--primary" id="btnContinue">continue</button>
+        <button class="btn btn--pill btn--ghost" id="btnSuspicious">nah this is suspicious</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 2: HUB -->
+  <section class="screen screen--hub" id="screenHub">
+    <div class="screen__inner">
+      <h2 class="hub__title" id="hubTitle"></h2>
+      <p class="hub__subtitle">complete both to unlock the final bit</p>
+      <div class="hub-cards">
+        <div class="hub-card" id="card1" data-target="screenStep1">
+          <div class="hub-card__emoji">☕</div>
+          <div class="hub-card__body">
+            <span class="hub-card__step">step 1</span>
+            <span class="hub-card__desc">why is there a whole website</span>
+          </div>
+          <span class="hub-card__arrow">→</span>
+          <span class="hub-card__done hidden">✓</span>
+        </div>
+        <div class="hub-card" id="card2" data-target="screenStep2">
+          <div class="hub-card__emoji">🌸</div>
+          <div class="hub-card__body">
+            <span class="hub-card__step">step 2</span>
+            <span class="hub-card__desc">tiny honesty moment</span>
+          </div>
+          <span class="hub-card__arrow">→</span>
+          <span class="hub-card__done hidden">✓</span>
+        </div>
+        <div class="hub-card hub-card--locked" id="cardFinal" data-target="screenFinal">
+          <div class="hub-card__emoji">💬</div>
+          <div class="hub-card__body">
+            <span class="hub-card__step">final</span>
+            <span class="hub-card__desc">okay tiny question 😭</span>
+          </div>
+          <span class="hub-card__lock">🔒</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 3: STEP 1 -->
+  <section class="screen screen--step1" id="screenStep1">
+    <div class="screen__inner">
+      <div class="typing-block" id="step1Typing"></div>
+      <button class="btn btn--pill btn--primary hidden" id="btnStep1Done">okay fair 😭</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 4: STEP 2 -->
+  <section class="screen screen--step2" id="screenStep2">
+    <div class="screen__inner">
+      <div class="typing-block" id="step2Typing"></div>
+      <button class="btn btn--pill btn--primary hidden" id="btnStep2Done">continue</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 5: FINAL -->
+  <section class="screen screen--final" id="screenFinal">
+    <div class="screen__inner">
+      <div class="typing-block" id="finalTyping"></div>
+      <div class="final-buttons hidden" id="finalButtons">
+        <button class="btn btn--pill btn--primary" id="btnYes">sure :)</button>
+        <button class="btn btn--pill btn--ghost" id="btnEscape">respectfully escaping</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 6: YES ENDING -->
+  <section class="screen screen--yes" id="screenYes">
+    <div class="screen__inner">
+      <div class="typing-block" id="yesTyping"></div>
+    </div>
+  </section>
+
+  <!-- SCREEN 7: ESCAPE ENDING -->
+  <section class="screen screen--escape" id="screenEscape">
+    <div class="screen__inner">
+      <div class="typing-block" id="escapeTyping"></div>
+    </div>
+  </section>
+
+  <audio id="bgMusic" loop>
+    <source src="assets/soft_music.mp3" type="audio/mpeg" />
+  </audio>
+
+  <script src="script.js"></script>
+</body>
+</html>

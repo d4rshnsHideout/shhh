@@ -1,0 +1,417 @@
+/* =====================================================
+   style.css — hi shreya 😭 (v2)
+   ===================================================== */
+
+:root {
+  --white:       #ffffff;
+  --off-white:   #fdfcfb;
+  --cream:       #fef9f5;
+  --pink-soft:   #fce4ec;
+  --pink-mid:    #f8bbd0;
+  --pink-deep:   #f48fb1;
+  --peach:       #ffd8c2;
+  --peach-mid:   #ffccb3;
+  --sage:        #d4ebd0;
+  --sage-dark:   #a8c5a0;
+  --gold:        #f5e6c8;
+  --purple-soft: #ede7f6;
+  --text-dark:   #2d2d2d;
+  --text-mid:    #5a5a5a;
+  --text-light:  #9a9a9a;
+  --radius-pill: 50px;
+  --radius-card: 20px;
+  --shadow-soft: 0 8px 40px rgba(0,0,0,0.07), 0 2px 12px rgba(0,0,0,0.04);
+  --shadow-card: 0 20px 60px rgba(0,0,0,0.09), 0 4px 16px rgba(0,0,0,0.05);
+  --transition:  0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html, body { width:100%; height:100%; overflow:hidden; }
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background: var(--white);
+  color: var(--text-dark);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Particle Canvas ---------- */
+#bgCanvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* =====================================================
+   SCREENS
+   ===================================================== */
+.screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(18px);
+  transition: opacity 0.65s ease, transform 0.65s var(--transition);
+  overflow: hidden; /* keep orbs clipped */
+}
+
+.screen.active  { opacity:1; pointer-events:all; transform:translateY(0); }
+.screen.leaving {
+  opacity:0; pointer-events:none; transform:translateY(-18px);
+  transition: opacity 0.45s ease, transform 0.45s var(--transition);
+}
+
+.screen__inner {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 560px;
+  padding: 40px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  text-align: center;
+}
+
+/* ── Screen base backgrounds ── */
+.screen--intro  { background: var(--white); }
+.screen--hub    { background: var(--cream); }
+.screen--step1  { background: var(--white); }
+
+/* Romantic screens get their bg from orb layer + a soft base */
+.screen--step2  { background: #fff4f7; }
+.screen--final  { background: #fff2f8; }
+.screen--yes    { background: #fff0f5; }
+.screen--escape { background: linear-gradient(145deg,#fdfcfb 0%,#f3f3f3 100%); }
+
+/* =====================================================
+   ROMANTIC AMBIENT ORBS
+   Applied to step2 / final / yes screens via JS
+   ===================================================== */
+.romantic-orbs {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.r-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation:
+    orbFadeIn 2s ease forwards,
+    orbDrift  var(--dur, 14s) ease-in-out infinite;
+}
+
+@keyframes orbFadeIn {
+  0%   { opacity: 0; }
+  100% { opacity: var(--max-op, 0.5); }
+}
+
+@keyframes orbDrift {
+  0%   { transform: translate(0px, 0px)           scale(1);    }
+  20%  { transform: translate(var(--x1), var(--y1)) scale(1.06); }
+  40%  { transform: translate(var(--x2), var(--y2)) scale(0.97); }
+  60%  { transform: translate(var(--x3), var(--y3)) scale(1.04); }
+  80%  { transform: translate(var(--x4), var(--y4)) scale(0.99); }
+  100% { transform: translate(0px, 0px)           scale(1);    }
+}
+
+/* Shimmer overlay — a slow shifting gradient on romantic screens */
+.romantic-shimmer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    120deg,
+    rgba(252,228,236,0)   0%,
+    rgba(248,187,208,0.18) 30%,
+    rgba(255,216,194,0.14) 55%,
+    rgba(237,231,246,0.15) 80%,
+    rgba(252,228,236,0)   100%
+  );
+  background-size: 200% 200%;
+  animation: shimmerShift 10s ease-in-out infinite alternate;
+}
+
+@keyframes shimmerShift {
+  0%   { background-position: 0% 0%;   }
+  100% { background-position: 100% 100%; }
+}
+
+/* Tiny sparkle dots on romantic screens */
+.sparkle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: sparkleAnim var(--sp-dur, 3s) ease-in-out infinite var(--sp-delay, 0s);
+}
+
+@keyframes sparkleAnim {
+  0%, 100% { opacity: 0;    transform: scale(0.4); }
+  50%      { opacity: var(--sp-op, 0.7); transform: scale(1);   }
+}
+
+/* =====================================================
+   TYPING BLOCK
+   ===================================================== */
+.typing-block {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.type-line {
+  font-size: clamp(1.05rem, 3.5vw, 1.3rem);
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--text-dark);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+  max-width: 480px;
+}
+
+.type-line.show { opacity:1; transform:translateY(0); }
+
+.type-line--muted {
+  font-size: clamp(0.9rem, 3vw, 1.05rem);
+  color: var(--text-mid);
+  font-weight: 300;
+}
+
+.type-line--big {
+  font-size: clamp(1.3rem, 5vw, 1.9rem);
+  font-weight: 600;
+}
+
+.cursor {
+  display: inline-block;
+  width: 2px; height: 1.1em;
+  background: var(--pink-deep);
+  margin-left: 2px;
+  vertical-align: middle;
+  border-radius: 2px;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%,100% { opacity:1; }
+  50%     { opacity:0; }
+}
+
+/* =====================================================
+   BUTTONS
+   ===================================================== */
+.btn {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+
+.btn--pill { border-radius: var(--radius-pill); padding: 13px 32px; }
+
+.btn--primary {
+  background: linear-gradient(135deg, #f8bbd0, #f48fb1);
+  color: white;
+  box-shadow: 0 6px 24px rgba(244,143,177,0.35);
+}
+.btn--primary:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 10px 32px rgba(244,143,177,0.5);
+}
+.btn--primary:active { transform: scale(0.98); }
+
+.btn--ghost {
+  background: rgba(255,255,255,0.65);
+  color: var(--text-mid);
+  border: 1.5px solid rgba(200,190,190,0.35);
+  backdrop-filter: blur(10px);
+}
+.btn--ghost:hover {
+  background: rgba(255,255,255,0.88);
+  color: var(--text-dark);
+}
+
+/* ── Escape button — runaway mode ── */
+.btn--escape {
+  position: fixed;
+  z-index: 9999;
+  transition: left 0.28s cubic-bezier(0.22,1,0.36,1),
+              top  0.28s cubic-bezier(0.22,1,0.36,1),
+              opacity 0.3s ease;
+  /* override ghost defaults when fixed */
+  pointer-events: all;
+  user-select: none;
+}
+
+/* little "too slow" toast */
+.flee-toast {
+  position: fixed;
+  z-index: 9998;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.78rem;
+  color: var(--text-light);
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(8px);
+  border-radius: 30px;
+  padding: 5px 14px;
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.flee-toast.show { opacity:1; transform:translateY(0); }
+
+.hidden { display:none !important; }
+
+.intro-buttons,
+.final-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  animation: fadeUp 0.6s ease forwards;
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(14px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* =====================================================
+   HUB
+   ===================================================== */
+.hub__title {
+  font-size: clamp(1.2rem, 4.5vw, 1.7rem);
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.hub__subtitle {
+  font-size: 0.82rem;
+  font-weight: 300;
+  color: var(--text-light);
+  letter-spacing: 0.04em;
+  margin-top: -18px;
+}
+
+.hub-cards {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hub-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255,255,255,0.78);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  border: 1.5px solid rgba(255,255,255,0.95);
+  border-radius: var(--radius-card);
+  padding: 18px 22px;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.4s ease, border-color 0.4s ease;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.hub-card::before {
+  content:'';
+  position:absolute; inset:0;
+  border-radius: var(--radius-card);
+  background: linear-gradient(135deg,rgba(255,255,255,0.4),rgba(255,255,255,0));
+  pointer-events:none;
+}
+
+.hub-card:hover:not(.hub-card--locked):not(.hub-card--complete) {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: var(--shadow-card);
+}
+
+.hub-card--locked { cursor:not-allowed; opacity:0.55; }
+
+.hub-card--locked.unlocked {
+  cursor:pointer; opacity:1;
+  animation: cardUnlock 0.6s ease;
+  border-color: rgba(248,187,208,0.6);
+  box-shadow: 0 0 0 2px rgba(248,187,208,0.3), var(--shadow-card);
+}
+
+@keyframes cardUnlock {
+  0%  { transform:scale(0.97); }
+  50% { transform:scale(1.03); }
+  100%{ transform:scale(1); }
+}
+
+.hub-card--complete {
+  background: rgba(212,235,208,0.55);
+  border-color: rgba(168,197,160,0.5);
+  cursor: default;
+}
+
+.hub-card__emoji { font-size:1.5rem; flex-shrink:0; width:40px; text-align:center; }
+
+.hub-card__body {
+  flex:1;
+  display:flex; flex-direction:column; gap:2px;
+}
+
+.hub-card__step {
+  font-size:0.7rem; font-weight:600;
+  color:var(--text-light);
+  text-transform:uppercase; letter-spacing:0.08em;
+}
+
+.hub-card__desc { font-size:0.95rem; font-weight:500; color:var(--text-dark); }
+
+.hub-card__arrow, .hub-card__lock, .hub-card__done {
+  font-size:1rem; flex-shrink:0;
+  transition: transform 0.2s ease;
+  color:var(--text-light);
+}
+
+.hub-card:hover:not(.hub-card--locked) .hub-card__arrow {
+  transform: translateX(4px);
+}
+
+.hub-card__done { color:var(--sage-dark); font-weight:700; font-size:1.1rem; }
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+@media (max-width: 480px) {
+  .screen__inner  { padding: 32px 20px; gap: 24px; }
+  .hub-card       { padding: 15px 16px; gap: 12px; }
+  .btn--pill      { padding: 12px 26px; font-size: 0.87rem; }
+  .type-line      { font-size: clamp(0.95rem, 4vw, 1.1rem); }
+}
