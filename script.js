@@ -536,38 +536,53 @@ document.querySelector('.hub-cards').addEventListener('click', e => {
 /* ─────────────────────────────────────────
    BUTTON WIRING
 ───────────────────────────────────────── */
-$('btnContinue').addEventListener('click', () => {
-  // Mobile Audio explicit interaction proxy handler
-  if (typeof music.play === 'function') {
-    music.play().then(() => {
-      if (!state.musicStarted) {
-        state.musicStarted = true;
-        music.volume = 0;
-        let v = 0;
-        const fade = setInterval(() => {
-          v = Math.min(v + 0.02, 0.55);
-          music.volume = v;
-          if (v >= 0.55) clearInterval(fade);
-        }, 80);
-      }
-    }).catch(() => {});
+$('btnContinue').addEventListener('click', async () => {
+
+  // mobile-safe audio unlock
+  if (!state.musicStarted) {
+    state.musicStarted = true;
+
+    try {
+      music.volume = 0;
+      await music.play();
+
+      let v = 0;
+
+      const fade = setInterval(() => {
+        v = Math.min(v + 0.02, 0.55);
+        music.volume = v;
+
+        if (v >= 0.55) {
+          clearInterval(fade);
+        }
+      }, 80);
+
+    } catch (err) {
+      console.log('audio blocked:', err);
+    }
   }
+
   goTo('screenHub');
 });
 
 $('btnSuspicious').addEventListener('click', async e => {
-  // Back up core initialization trigger for explicit mobile tap sequence
-  if (typeof music.play === 'function') {
-    music.play().then(() => { music.pause(); }).catch(() => {});
-  }
 
   const btn = e.currentTarget;
+
   btn.disabled = true;
   btn.style.transform = 'scale(0.95)';
+
   await sleep(120);
+
   btn.style.transform = '';
-  state.suspiciousIdx = (state.suspiciousIdx + 1) % suspiciousTexts.length;
-  btn.textContent = suspiciousTexts[state.suspiciousIdx];
+
+  state.suspiciousIdx =
+    (state.suspiciousIdx + 1) %
+    suspiciousTexts.length;
+
+  btn.textContent =
+    suspiciousTexts[state.suspiciousIdx];
+
   btn.disabled = false;
 });
 
@@ -624,7 +639,6 @@ window.addEventListener('resize', () => {
   }
 });
 
-document.addEventListener('touchstart', () => { startMusic(); }, { once: true });
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
