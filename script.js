@@ -1,5 +1,5 @@
 /* =====================================================
-   script.js — hi shreya 😭 (v2)
+   script.js — hi shreya 😭 (v2.1 Mobile Audio + Screen Fixed)
    ===================================================== */
 
 'use strict';
@@ -229,7 +229,7 @@ async function startMusic() {
       music.volume = v;
       if (v >= 0.55) clearInterval(fade);
     }, 80);
-  } catch (_) { /* blocked — unlocked on first touch */ }
+  } catch (_) { /* blocked handler fallback */ }
 }
 
 /* ─────────────────────────────────────────
@@ -537,11 +537,30 @@ document.querySelector('.hub-cards').addEventListener('click', e => {
    BUTTON WIRING
 ───────────────────────────────────────── */
 $('btnContinue').addEventListener('click', () => {
-  startMusic();
+  // Mobile Audio explicit interaction proxy handler
+  if (typeof music.play === 'function') {
+    music.play().then(() => {
+      if (!state.musicStarted) {
+        state.musicStarted = true;
+        music.volume = 0;
+        let v = 0;
+        const fade = setInterval(() => {
+          v = Math.min(v + 0.02, 0.55);
+          music.volume = v;
+          if (v >= 0.55) clearInterval(fade);
+        }, 80);
+      }
+    }).catch(() => {});
+  }
   goTo('screenHub');
 });
 
 $('btnSuspicious').addEventListener('click', async e => {
+  // Back up core initialization trigger for explicit mobile tap sequence
+  if (typeof music.play === 'function') {
+    music.play().then(() => { music.pause(); }).catch(() => {});
+  }
+
   const btn = e.currentTarget;
   btn.disabled = true;
   btn.style.transform = 'scale(0.95)';
@@ -563,7 +582,7 @@ $('btnStep2Done').addEventListener('click', () => {
 });
 
 $('btnYes').addEventListener('click', () => {
-  startMusic();
+  if (typeof music.play === 'function') { music.play().catch(() => {}); }
   goTo('screenYes');
 });
 
