@@ -218,9 +218,28 @@ async function typeLines(lines, container) {
 }
 
 /* ─────────────────────────────────────────
-   MUSIC
+   MUSIC — mobile-safe unlock pattern
 ───────────────────────────────────────── */
 const music = $('bgMusic');
+let audioUnlocked = false;
+
+/**
+ * Call SYNCHRONOUSLY inside a user gesture (click/touchstart).
+ * Does a silent play→pause to unlock the audio element on iOS/Android
+ * so subsequent programmatic play() calls work without needing a gesture.
+ */
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  music.volume = 0;
+  const p = music.play();
+  if (p && p.then) {
+    p.then(() => {
+      music.pause();
+      music.currentTime = 0;
+    }).catch(() => {});
+  }
+}
 
 async function startMusic() {
   if (state.musicStarted) return;
@@ -234,7 +253,46 @@ async function startMusic() {
       music.volume = v;
       if (v >= 0.55) clearInterval(fade);
     }, 80);
-  } catch (_) { /* blocked — unlocked on first touch */ }
+  } catch (_) {
+    // Still blocked — show the fallback tap-to-play button
+    showMusicBtn();
+  }
+}
+
+/* Floating fallback music button — only appears if autoplay stays blocked */
+function showMusicBtn() {
+  if (document.getElementById('musicFallbackBtn')) return;
+  const btn = document.createElement('button');
+  btn.id = 'musicFallbackBtn';
+  btn.textContent = '🎵';
+  btn.title = 'tap to play music';
+  btn.style.cssText = `
+    position:fixed; bottom:22px; right:22px; z-index:99999;
+    width:44px; height:44px; border-radius:50%; border:none;
+    background:rgba(255,255,255,0.82); backdrop-filter:blur(12px);
+    box-shadow:0 4px 20px rgba(244,143,177,0.35);
+    font-size:1.1rem; cursor:pointer;
+    transition:transform 0.2s ease, box-shadow 0.2s ease, opacity 0.4s ease;
+    -webkit-tap-highlight-color:transparent;
+  `;
+  btn.addEventListener('click', () => {
+    unlockAudio();
+    setTimeout(async () => {
+      state.musicStarted = false;
+      await startMusic();
+      btn.style.opacity = '0';
+      setTimeout(() => btn.remove(), 400);
+    }, 60);
+  });
+  btn.addEventListener('mouseenter', () => {
+    btn.style.transform = 'scale(1.12)';
+    btn.style.boxShadow = '0 6px 28px rgba(244,143,177,0.5)';
+  });
+  btn.addEventListener('mouseleave', () => {
+    btn.style.transform = '';
+    btn.style.boxShadow = '0 4px 20px rgba(244,143,177,0.35)';
+  });
+  document.body.appendChild(btn);
 }
 
 /* ─────────────────────────────────────────
@@ -541,11 +599,13 @@ document.querySelector('.hub-cards').addEventListener('click', e => {
    BUTTON WIRING
 ───────────────────────────────────────── */
 $('btnContinue').addEventListener('click', () => {
+  unlockAudio();   // sync unlock inside gesture — critical for iOS
   startMusic();
   goTo('screenHub');
 });
 
 $('btnSuspicious').addEventListener('click', async e => {
+  unlockAudio();   // unlock on this gesture too
   const btn = e.currentTarget;
   btn.disabled = true;
   btn.style.transform = 'scale(0.95)';
@@ -600,7 +660,8 @@ window.addEventListener('resize', () => {
   }
 });
 
-document.addEventListener('touchstart', () => { startMusic(); }, { once: true });
+// iOS unlock also triggered by touchstart on the document (belt-and-suspenders)
+document.addEventListener('touchstart', () => { unlockAudio(); }, { once: true, passive: true });
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
