@@ -1,5 +1,5 @@
 /* =====================================================
-   script.js — hi shreya 😭 (Final Mobile Audio Gateway)
+   script.js — hi shreya 😭 (v2)
    ===================================================== */
 
 'use strict';
@@ -137,13 +137,17 @@ const ORB_CONFIGS = [
   { size: 110, lp: '88%', tp: '40%',  color:'#f9d5e5', dur:17, op:0.40, delay:0.5 },
 ];
 
+const SPARKLE_COLORS = ['#f8bbd0','#ffd8c2','#ede7f6','#fce4ec','#ffd6e7'];
+
 function injectRomanticBg(screenEl) {
   if (screenEl.querySelector('.romantic-orbs')) return;
 
+  /* shimmer overlay */
   const shimmer = document.createElement('div');
   shimmer.className = 'romantic-shimmer';
   screenEl.insertBefore(shimmer, screenEl.firstChild);
 
+  /* orbs container */
   const container = document.createElement('div');
   container.className = 'romantic-orbs';
 
@@ -151,6 +155,7 @@ function injectRomanticBg(screenEl) {
     const div = document.createElement('div');
     div.className = 'r-orb';
 
+    /* random drift vectors */
     const kf = () => `${rand(-55, 55).toFixed(1)}px`;
     div.style.cssText = `
       width: ${o.size}px;
@@ -169,7 +174,7 @@ function injectRomanticBg(screenEl) {
     container.appendChild(div);
   });
 
-  const SPARKLE_COLORS = ['#f8bbd0','#ffd8c2','#ede7f6','#fce4ec','#ffd6e7'];
+  /* sparkles */
   for (let i = 0; i < 18; i++) {
     const sp = document.createElement('div');
     sp.className = 'sparkle';
@@ -213,36 +218,23 @@ async function typeLines(lines, container) {
 }
 
 /* ─────────────────────────────────────────
-   MUSIC ENGINE (Direct Unlocker)
+   MUSIC
 ───────────────────────────────────────── */
 const music = $('bgMusic');
 
-async function triggerDirectPlayback() {
+async function startMusic() {
   if (state.musicStarted) return;
-  
+  state.musicStarted = true;
+  music.volume = 0;
   try {
-    // WebKit mobile audio context explicit unlock
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (AudioContextClass) {
-      const audioCtx = new AudioContextClass();
-      if (audioCtx.state === 'suspended') {
-        await audioCtx.resume();
-      }
-    }
-    
-    music.volume = 0;
     await music.play();
-    state.musicStarted = true;
-    
     let v = 0;
     const fade = setInterval(() => {
       v = Math.min(v + 0.02, 0.55);
       music.volume = v;
       if (v >= 0.55) clearInterval(fade);
     }, 80);
-  } catch (err) {
-    console.log('Mobile audio blocked:', err);
-  }
+  } catch (_) { /* blocked — unlocked on first touch */ }
 }
 
 /* ─────────────────────────────────────────
@@ -251,6 +243,7 @@ async function triggerDirectPlayback() {
 let escapeFixed  = false;
 let escapeActive = false;
 
+// "too slow" toast element
 const fleeToast = document.createElement('div');
 fleeToast.className = 'flee-toast';
 fleeToast.textContent = 'too slow 😭';
@@ -266,6 +259,31 @@ function showFleeToast(x, y) {
   toastTimer = setTimeout(() => fleeToast.classList.remove('show'), 1100);
 }
 
+function getFleePos(mouseX, mouseY, btnW, btnH) {
+  const margin = 40;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  // Flee to the opposite quadrant of the screen
+  let x, y;
+  if (mouseX < vw * 0.5) {
+    x = rand(vw * 0.52, vw - btnW - margin);
+  } else {
+    x = rand(margin, vw * 0.48 - btnW);
+  }
+
+  if (mouseY < vh * 0.5) {
+    y = rand(vh * 0.55, vh - btnH - margin);
+  } else {
+    y = rand(margin, vh * 0.45 - btnH);
+  }
+
+  return {
+    x: Math.max(margin, Math.min(x, vw - btnW - margin)),
+    y: Math.max(margin, Math.min(y, vh - btnH - margin)),
+  };
+}
+
 function fixEscapeButton() {
   const btn = $('btnEscape');
   if (escapeFixed || !btn || btn.classList.contains('hidden')) return;
@@ -279,32 +297,6 @@ function fixEscapeButton() {
   escapeFixed = true;
 }
 
-function getFleePos(currentX, currentY, btnW, btnH) {
-  const margin = 20; 
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-
-  let newX, newY;
-  let attempts = 0;
-
-  do {
-    const angle = Math.random() * Math.PI * 2;
-    const dist = rand(100, 220); 
-
-    newX = currentX + Math.cos(angle) * dist;
-    newY = currentY + Math.sin(angle) * dist;
-
-    newX = Math.max(margin, Math.min(newX, vw - btnW - margin));
-    newY = Math.max(margin, Math.min(newY, vh - btnH - margin));
-
-    attempts++;
-  } while (
-    Math.hypot(newX - currentX, newY - currentY) < 60 && attempts < 10
-  );
-
-  return { x: newX, y: newY };
-}
-
 function fleeButton(mouseX, mouseY, fromToast) {
   const btn = $('btnEscape');
   if (!btn || btn.classList.contains('hidden')) return;
@@ -313,10 +305,7 @@ function fleeButton(mouseX, mouseY, fromToast) {
 
   const bw  = btn.offsetWidth;
   const bh  = btn.offsetHeight;
-  const currentX = parseFloat(btn.style.left);
-  const currentY = parseFloat(btn.style.top);
-
-  const pos = getFleePos(currentX, currentY, bw, bh);
+  const pos = getFleePos(mouseX, mouseY, bw, bh);
 
   btn.style.left = `${pos.x}px`;
   btn.style.top  = `${pos.y}px`;
@@ -326,6 +315,7 @@ function fleeButton(mouseX, mouseY, fromToast) {
   }
 }
 
+// Desktop: flee on proximity
 document.addEventListener('mousemove', e => {
   if (!escapeActive) return;
   const btn = $('btnEscape');
@@ -339,12 +329,14 @@ document.addEventListener('mousemove', e => {
   if (dist < 110) fleeButton(e.clientX, e.clientY, true);
 });
 
+// Mobile: flee on touchstart
 document.getElementById('btnEscape').addEventListener('touchstart', e => {
   e.preventDefault();
   const touch = e.touches[0];
   fleeButton(touch.clientX, touch.clientY, true);
 }, { passive: false });
 
+// Catch any stray click
 document.getElementById('btnEscape').addEventListener('click', e => {
   e.preventDefault();
   fleeButton(
@@ -359,6 +351,7 @@ document.getElementById('btnEscape').addEventListener('click', e => {
 ───────────────────────────────────────── */
 const screenInit = {};
 
+/* ── INTRO ── */
 screenInit['screenIntro'] = async () => {
   currentPalette = PALETTES.neutral;
   const container = $('introTyping');
@@ -367,7 +360,7 @@ screenInit['screenIntro'] = async () => {
   await typeLines([
     { text:'hiii shreya 😭',                                   cls:'type-line--big',   pause:700 },
     { text:'okay this is slightly random',                     cls:'type-line--muted', pause:600 },
-    { text:'but we were in the same cc trip thing',            cls:'',                 pause:600 },
+    { text:'but we were in the same cc trip thing',cls:'',                 pause:600 },
     { text:'and idk… you genuinely seemed really nice',        cls:'',                 pause:600 },
     { text:'also okay i\'ll be honest',                       cls:'type-line--muted', pause:500 },
     { text:'i thought you were really pretty 😭',             cls:'',                 pause:600 },
@@ -377,8 +370,10 @@ screenInit['screenIntro'] = async () => {
   buttons.classList.remove('hidden');
 };
 
+/* ── HUB ── */
 screenInit['screenHub'] = async () => {
   currentPalette = PALETTES.neutral;
+  // Reset escape button state when returning to hub
   escapeActive = false;
   escapeFixed  = false;
   const btn = $('btnEscape');
@@ -398,9 +393,11 @@ screenInit['screenHub'] = async () => {
     title.textContent = text.slice(0, c);
     await sleep(rand(35, 72));
   }
+
   refreshHub();
 };
 
+/* ── STEP 1 ── */
 screenInit['screenStep1'] = async () => {
   currentPalette = PALETTES.neutral;
   const container = $('step1Typing');
@@ -417,9 +414,11 @@ screenInit['screenStep1'] = async () => {
   btn.classList.remove('hidden');
 };
 
+/* ── STEP 2 (romantic bg) ── */
 screenInit['screenStep2'] = async () => {
   currentPalette = PALETTES.pink;
   particleBoost  = false;
+  startMusic();
 
   injectRomanticBg($('screenStep2'));
 
@@ -439,9 +438,11 @@ screenInit['screenStep2'] = async () => {
   btn.classList.remove('hidden');
 };
 
+/* ── FINAL (romantic bg + escape button activated) ── */
 screenInit['screenFinal'] = async () => {
   currentPalette = PALETTES.warm;
   particleBoost  = false;
+  startMusic();
 
   injectRomanticBg($('screenFinal'));
 
@@ -459,14 +460,17 @@ screenInit['screenFinal'] = async () => {
 
   buttons.classList.remove('hidden');
 
+  // Activate escape after a tiny delay so button has rendered
   await sleep(200);
   escapeActive = true;
 };
 
+/* ── YES ENDING (romantic bg) ── */
 screenInit['screenYes'] = async () => {
   currentPalette = PALETTES.pink;
   particleBoost  = true;
   particles.forEach(p => p.reset(false));
+  startMusic();
 
   injectRomanticBg($('screenYes'));
 
@@ -478,6 +482,7 @@ screenInit['screenYes'] = async () => {
   ], container);
 };
 
+/* ── ESCAPE ENDING ── */
 screenInit['screenEscape'] = async () => {
   currentPalette = PALETTES.neutral;
   particleBoost  = false;
@@ -528,24 +533,19 @@ document.querySelector('.hub-cards').addEventListener('click', e => {
     goTo('screenFinal');
     return;
   }
-  
   if (card.classList.contains('hub-card--complete')) return;
   if (target) goTo(target);
 });
 
 /* ─────────────────────────────────────────
-   BUTTON WIRING (Gateway Audio Unlock)
+   BUTTON WIRING
 ───────────────────────────────────────── */
-$('btnContinue').addEventListener('click', async () => {
-  // THE FIX: Wait for the hardware to unlock via this direct tap
-  await triggerDirectPlayback();
+$('btnContinue').addEventListener('click', () => {
+  startMusic();
   goTo('screenHub');
 });
 
 $('btnSuspicious').addEventListener('click', async e => {
-  // Just in case she taps this first!
-  triggerDirectPlayback();
-
   const btn = e.currentTarget;
   btn.disabled = true;
   btn.style.transform = 'scale(0.95)';
@@ -567,8 +567,11 @@ $('btnStep2Done').addEventListener('click', () => {
 });
 
 $('btnYes').addEventListener('click', () => {
+  startMusic();
   goTo('screenYes');
 });
+
+/* btnEscape events are handled separately above (flee logic) */
 
 /* ─────────────────────────────────────────
    INIT
@@ -583,26 +586,21 @@ function init() {
 window.addEventListener('resize', () => {
   resizeCanvas();
   particles.forEach(p => { if (p.x > canvas.width) p.x = rand(0, canvas.width); });
-
+  // Reset escape button position on resize
   if (escapeActive && escapeFixed) {
     const btn = $('btnEscape');
     if (btn) {
-      const bw = btn.offsetWidth;
-      const bh = btn.offsetHeight;
-      const currentX = parseFloat(btn.style.left);
-      const currentY = parseFloat(btn.style.top);
-      
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      
-      const safeX = Math.max(20, Math.min(currentX, vw - bw - 20));
-      const safeY = Math.max(20, Math.min(currentY, vh - bh - 20));
-      
-      btn.style.left = `${safeX}px`;
-      btn.style.top  = `${safeY}px`;
+      const pos = getFleePos(
+        window.innerWidth / 2, window.innerHeight / 2,
+        btn.offsetWidth, btn.offsetHeight
+      );
+      btn.style.left = `${pos.x}px`;
+      btn.style.top  = `${pos.y}px`;
     }
   }
 });
+
+document.addEventListener('touchstart', () => { startMusic(); }, { once: true });
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
